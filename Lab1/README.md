@@ -95,7 +95,6 @@ Where:
 - Print the values
 
 ---
-
 ## 📌 Matrix Multiplication & Linear Model
 
 ### Problem Statement
@@ -143,6 +142,3 @@ Compute:
 \[
 X\theta
 \]
-
----
----
