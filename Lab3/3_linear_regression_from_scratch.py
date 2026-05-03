@@ -1,79 +1,62 @@
-import pandas as pd
+
 import numpy as np
-import matplotlib.pyplot as plt
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
 
-# Read simulated Data csv file
+# 1. LOAD DATA
 data = pd.read_csv("simulated_data_multiple_linear_regression_for_ML.csv")
-X = data.loc[:, 'age':'Gender'].values
-y = data['disease_score'].values.reshape(-1, 1)
 
-# Feature scaling
-X_mean = X.mean(axis=0)
-X_std = X.std(axis=0)
-X_scaled = (X - X_mean) / X_std
+X = data.iloc[:, 0:5].values   # features
+y = data.iloc[:, 6].values    # target
 
-# Adding intercept
-X_scaled = np.hstack((np.ones((X_scaled.shape[0], 1)), X_scaled))
+# 2. TRAIN–TEST SPLIT
 
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.3, random_state=999
+)
 
-def hypothesis_func(X, theta):
-    return np.dot(X, theta)
-
-
-def cost_func(X, y, theta):
-    m = len(y)
-    hypothes = hypothesis_func(X, theta)
-    cost = (1 / (2 * m)) * np.sum((hypothes - y) ** 2)
-    return cost
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
 
 
-def compute_gradient(X, y, theta):
-    m = len(y)
-    hypoth = hypothesis_func(X, theta)
-    derivat = np.zeros_like(theta)
+X_train = np.hstack((np.ones((X_train.shape[0], 1)), X_train))
+X_test = np.hstack((np.ones((X_test.shape[0], 1)), X_test))
 
-    for i in range(m):
-        for j in range(X.shape[1]):
-            derivat[j] += (hypoth[i] - y[i]) * X[i, j]
 
-    derivat = derivat / m
-    return derivat
+m, n = X_train.shape
+thetas = np.zeros(n)
+
+
+alpha = 0.01
+iterations = 2000
+
+for i in range(iterations):
+    y_pred = X_train @ thetas
+    error = y_pred - y_train
+
+    gradient = (1 / m) * (X_train.T @ error)
+    thetas = thetas - alpha * gradient
+
+
+y_train_pred = X_train @ thetas
+y_test_pred = X_test @ thetas
+
 
 def mse(y_true, y_pred):
     return np.mean((y_true - y_pred) ** 2)
 
 def r2_score(y_true, y_pred):
-    ss_res = np.sum((y_true - y_pred)**2)
-    ss_tot = np.sum((y_true - np.mean(y_true))**2)
-    return 1 - (ss_res / ss_tot)
+    ss_res = np.sum((y_true - y_pred) ** 2)
+    ss_tot = np.sum((y_true - np.mean(y_true)) ** 2)
+    return 1 - ss_res / ss_tot
 
 
-def main():
-    theta = np.zeros((X_scaled.shape[1], 1))
+print("Train MSE :", mse(y_train, y_train_pred))
+print("Test  MSE :", mse(y_test, y_test_pred))
 
-    learning_rate = 0.01
-    num_of_iterations = 1000
-    cost_history = []
+print("Train R²  :", r2_score(y_train, y_train_pred))
+print("Test  R²  :", r2_score(y_test, y_test_pred))
 
-    for i in range(num_of_iterations):
-        gradient = compute_gradient(X_scaled, y, theta)
-        theta -= learning_rate * gradient
-        cost = cost_func(X_scaled, y, theta)
-        cost_history.append(cost)
-
-        print(f"Iteration-{i}: cost = {cost}, parameters = {theta}")
-
-    print(theta)
-    y_pred = hypothesis_func(X_scaled, theta)
-    # Plot convergence
-    plt.plot(range(num_of_iterations), cost_history)
-    plt.title("Convergence plot")
-    plt.xlabel("No. of iterations")
-    plt.ylabel("Cost")
-
-    plt.savefig("convergence.png")
-    print("\nMSE :", mse(y, y_pred))
-    print("R²  :", r2_score(y, y_pred))
-
-if __name__ == "__main__":
-    main()
+print("Final Thetas:", thetas)
